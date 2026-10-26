@@ -1,7 +1,7 @@
 # jwt-demo
 
 Ejemplo de autenticación con **JWT** en **Spring Boot 4.1** (Java 17, Spring Security, Spring Data JPA con H2 y [JJWT](https://github.com/jwtk/jjwt) 0.12.6).
-Acompaña la presentación «¿Qué es JWT?».
+Acompaña la presentación «¿Qué es JWT?». El frontend Angular que lo consume (guards, interceptors y refresh token) está en [jwt-demo-front](../jwt-demo-front); lo que se agregó para eso se explica en [IMPLEMENTACION.md](IMPLEMENTACION.md).
 
 ## Cómo ejecutarlo
 
@@ -22,7 +22,8 @@ La base de datos es H2 en memoria: se crea al arrancar y [DataInitializer](src/m
 | Método | Ruta | Acceso |
 |--------|------|--------|
 | POST | `/auth/registro` | **Público**: crea un usuario con rol USER |
-| POST | `/auth/login` | **Público**: valida usuario y contraseña y **devuelve el JWT** |
+| POST | `/auth/login` | **Público**: valida usuario y contraseña y **devuelve el JWT** y el refresh token |
+| POST | `/auth/refresh` | **Público**: canjea el refresh token por tokens nuevos |
 | GET | `/api/publico/info` | **Público** |
 | GET | `/api/productos`, `/api/productos/{id}` | **Público** |
 | POST | `/api/productos` | **Con token** |
@@ -58,7 +59,7 @@ co.edu.javeriana.jwtdemo
 ├── service      AuthService, UsuarioService, ProductoService, UsuarioDetailsService
 ├── repository   UsuarioRepository, ProductoRepository
 ├── entity       Usuario, Producto, Rol
-├── dto          LoginRequest, LoginResponse, RegistroRequest, UsuarioDTO, ProductoDTO, ProductoRequest
+├── dto          LoginRequest, LoginResponse, RefreshRequest, RegistroRequest, UsuarioDTO, ProductoDTO, ProductoRequest
 ├── security     JwtService, JwtAuthenticationFilter
 ├── config       SecurityConfig, DataInitializer
 └── exception    GlobalExceptionHandler y excepciones propias
@@ -71,13 +72,14 @@ Petición → **filtro JWT** → controller → service → repository → entit
 | Qué | Dónde |
 |-----|-------|
 | **Se genera el token** | [JwtService.generarToken](src/main/java/co/edu/javeriana/jwtdemo/security/JwtService.java), llamado desde [AuthService.login](src/main/java/co/edu/javeriana/jwtdemo/service/AuthService.java) (busca `AQUÍ SE GENERA EL TOKEN`) |
+| **Se genera y se canjea el refresh token** | [JwtService.generarRefreshToken](src/main/java/co/edu/javeriana/jwtdemo/security/JwtService.java) y [AuthService.refrescar](src/main/java/co/edu/javeriana/jwtdemo/service/AuthService.java) |
 | **Se valida el token** | [JwtService.validarToken](src/main/java/co/edu/javeriana/jwtdemo/security/JwtService.java) |
 | **Se lee el token en cada petición** | [JwtAuthenticationFilter](src/main/java/co/edu/javeriana/jwtdemo/security/JwtAuthenticationFilter.java) |
 | **Se registra el filtro y las reglas de acceso** | [SecurityConfig](src/main/java/co/edu/javeriana/jwtdemo/config/SecurityConfig.java) (busca `AQUÍ SE REGISTRA EL FILTRO JWT`) |
 | **Se busca al usuario en la base de datos al hacer login** | [UsuarioDetailsService](src/main/java/co/edu/javeriana/jwtdemo/service/UsuarioDetailsService.java) |
-| **Pruebas del flujo completo** | [JwtFlowTests](src/test/java/co/edu/javeriana/jwtdemo/JwtFlowTests.java): públicos, registro, login, 401, 403 y token alterado |
+| **Pruebas del flujo completo** | [JwtFlowTests](src/test/java/co/edu/javeriana/jwtdemo/JwtFlowTests.java): públicos, registro, login, 401, 403, token alterado, refresh y CORS |
 
 ## Ojo: es una demo
 
 - La clave de firma por defecto está en `application.properties` solo para que el ejemplo arranque. En un entorno real se pasa por la variable `JWT_SECRET` (genera una con `openssl rand -base64 32`).
-- No incluye refresh tokens: cuando el token expira (15 minutos) hay que volver a hacer login.
+- El refresh token no se puede revocar: sirve hasta que vence (7 días). Ver [IMPLEMENTACION.md](IMPLEMENTACION.md#limitaciones-es-una-demo).
