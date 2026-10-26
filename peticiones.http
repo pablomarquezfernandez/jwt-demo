@@ -1,0 +1,59 @@
+### ===== PÚBLICOS (sin token) =====
+
+### Información pública (200)
+GET http://localhost:8080/api/publico/info
+
+### Listar productos (200)
+GET http://localhost:8080/api/productos
+
+### Registrar un usuario nuevo (201)
+POST http://localhost:8080/auth/registro
+Content-Type: application/json
+
+{"username": "carlos", "password": "carlos123"}
+
+### Login: AQUÍ SE OBTIENE EL TOKEN
+# @name login
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{"username": "ana", "password": "ana123"}
+
+
+### ===== CON TOKEN =====
+
+### Mi perfil (200)
+GET http://localhost:8080/api/perfil
+Authorization: Bearer {{login.response.body.token}}
+
+### Mi perfil sin token (401)
+GET http://localhost:8080/api/perfil
+
+### Crear producto (201)
+POST http://localhost:8080/api/productos
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: application/json
+
+{"nombre": "Borrador", "precio": 900}
+
+
+### ===== CON TOKEN Y ROL ADMIN =====
+
+### Listar usuarios con el token de ana (403)
+GET http://localhost:8080/api/admin/usuarios
+Authorization: Bearer {{login.response.body.token}}
+
+### Login como admin
+# @name loginAdmin
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{"username": "admin", "password": "admin123"}
+
+### Listar usuarios con el token de admin (200)
+GET http://localhost:8080/api/admin/usuarios
+Authorization: Bearer {{loginAdmin.response.body.token}}
+
+### Eliminar producto con el token de admin (204)
+DELETE http://localhost:8080/api/productos/1
+Authorization: Bearer {{loginAdmin.response.body.token}}
