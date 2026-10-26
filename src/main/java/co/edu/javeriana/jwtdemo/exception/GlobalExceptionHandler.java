@@ -17,6 +17,11 @@ public class GlobalExceptionHandler {
 		return error(HttpStatus.UNAUTHORIZED, "Usuario o contraseña incorrectos");
 	}
 
+	@ExceptionHandler(TokenInvalidoException.class)
+	public ResponseEntity<Map<String, String>> tokenInvalido(TokenInvalidoException e) {
+		return error(HttpStatus.UNAUTHORIZED, e.getMessage());
+	}
+
 	@ExceptionHandler(UsuarioDuplicadoException.class)
 	public ResponseEntity<Map<String, String>> usuarioDuplicado(UsuarioDuplicadoException e) {
 		return error(HttpStatus.CONFLICT, e.getMessage());

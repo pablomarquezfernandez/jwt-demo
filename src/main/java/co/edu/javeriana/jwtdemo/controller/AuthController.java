@@ -9,13 +9,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import co.edu.javeriana.jwtdemo.dto.LoginRequest;
 import co.edu.javeriana.jwtdemo.dto.LoginResponse;
+import co.edu.javeriana.jwtdemo.dto.RefreshRequest;
 import co.edu.javeriana.jwtdemo.dto.RegistroRequest;
 import co.edu.javeriana.jwtdemo.dto.UsuarioDTO;
 import co.edu.javeriana.jwtdemo.service.AuthService;
 import jakarta.validation.Valid;
 
 /**
- * PÚBLICO: registro y login no piden token (es justo donde se obtiene).
+ * PÚBLICO: registro, login y refresh no piden access token (es justo donde se obtiene).
  */
 @RestController
 @RequestMapping("/auth")
@@ -37,5 +38,11 @@ public class AuthController {
 	@PostMapping("/login")
 	public LoginResponse login(@Valid @RequestBody LoginRequest request) {
 		return authService.login(request);
+	}
+
+	/** Recibe el refresh token y devuelve tokens nuevos sin pedir otra vez la contraseña. */
+	@PostMapping("/refresh")
+	public LoginResponse refrescar(@Valid @RequestBody RefreshRequest request) {
+		return authService.refrescar(request.refreshToken());
 	}
 }

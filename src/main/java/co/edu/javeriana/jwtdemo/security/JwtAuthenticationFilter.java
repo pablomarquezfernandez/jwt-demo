@@ -41,6 +41,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 		try {
 			Claims claims = jwtService.validarToken(header.substring(PREFIJO.length()));
+			// Un refresh token no autentica peticiones: solo se canjea en /auth/refresh (y no trae roles)
+			if (jwtService.esRefreshToken(claims)) {
+				throw new JwtException("Se envió un refresh token como access token");
+			}
 			List<SimpleGrantedAuthority> roles = ((List<?>) claims.get("roles", List.class)).stream()
 					.map(rol -> new SimpleGrantedAuthority(rol.toString()))
 					.toList();

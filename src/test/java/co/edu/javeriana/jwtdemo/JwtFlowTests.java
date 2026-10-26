@@ -2,7 +2,9 @@ package co.edu.javeriana.jwtdemo;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -26,13 +28,22 @@ class JwtFlowTests {
 	private MockMvc mockMvc;
 
 	private String login(String usuario, String clave) throws Exception {
-		String respuesta = mockMvc.perform(post("/auth/login")
+		return JsonPath.read(loginCompleto(usuario, clave), "$.token");
+	}
+
+	/** Devuelve el JSON completo del login: token, refreshToken, tipo y expiraEnSegundos. */
+	private String loginCompleto(String usuario, String clave) throws Exception {
+		return mockMvc.perform(post("/auth/login")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"username\":\"" + usuario + "\",\"password\":\"" + clave + "\"}"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.tipo").value("Bearer"))
+				.andExpect(jsonPath("$.refreshToken").isNotEmpty())
 				.andReturn().getResponse().getContentAsString();
-		return JsonPath.read(respuesta, "$.token");
+	}
+
+	private static String refreshBody(String refreshToken) {
+		return "{\"refreshToken\":\"" + refreshToken + "\"}";
 	}
 
 	private static String bearer(String token) {
@@ -149,5 +160,77 @@ class JwtFlowTests {
 
 		mockMvc.perform(delete("/api/productos/" + id).header(HttpHeaders.AUTHORIZATION, bearer(token)))
 				.andExpect(status().isNoContent());
+	}
+
+	// --- Refresh token ---
+
+	@Test
+	void refreshEntregaUnAccessTokenNuevoQueSirve() throws Exception {
+		String refreshToken = JsonPath.read(loginCompleto("ana", "ana123"), "$.refreshToken");
+
+		String respuesta = mockMvc.perform(post("/auth/refresh")
+				.contentType(MediaType.APPLICATION_JSON).content(refreshBody(refreshToken)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.token").isNotEmpty())
+				.andExpect(jsonPath("$.refreshToken").isNotEmpty())
+				.andExpect(jsonPath("$.tipo").value("Bearer"))
+				.andReturn().getResponse().getContentAsString();
+		String nuevoToken = JsonPath.read(respuesta, "$.token");
+
+		mockMvc.perform(get("/api/perfil").header(HttpHeaders.AUTHORIZATION, bearer(nuevoToken)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.username").value("ana"));
+	}
+
+	@Test
+	void refreshConservaElRol() throws Exception {
+		String refreshToken = JsonPath.read(loginCompleto("admin", "admin123"), "$.refreshToken");
+		String respuesta = mockMvc.perform(post("/auth/refresh")
+				.contentType(MediaType.APPLICATION_JSON).content(refreshBody(refreshToken)))
+				.andReturn().getResponse().getContentAsString();
+		String nuevoToken = JsonPath.read(respuesta, "$.token");
+
+		mockMvc.perform(get("/api/admin/usuarios").header(HttpHeaders.AUTHORIZATION, bearer(nuevoToken)))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	void refreshTokenNoSirveComoAccessToken() throws Exception {
+		String refreshToken = JsonPath.read(loginCompleto("ana", "ana123"), "$.refreshToken");
+
+		mockMvc.perform(get("/api/perfil").header(HttpHeaders.AUTHORIZATION, bearer(refreshToken)))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void accessTokenNoSirveParaRefrescar() throws Exception {
+		String token = login("ana", "ana123");
+
+		mockMvc.perform(post("/auth/refresh")
+				.contentType(MediaType.APPLICATION_JSON).content(refreshBody(token)))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.error").value("El token enviado no es un refresh token"));
+	}
+
+	@Test
+	void refreshTokenInvalidoResponde401() throws Exception {
+		mockMvc.perform(post("/auth/refresh")
+				.contentType(MediaType.APPLICATION_JSON).content(refreshBody("esto.no.sirve")))
+				.andExpect(status().isUnauthorized());
+		mockMvc.perform(post("/auth/refresh")
+				.contentType(MediaType.APPLICATION_JSON).content("{}"))
+				.andExpect(status().isBadRequest());
+	}
+
+	// --- CORS para el frontend Angular ---
+
+	@Test
+	void corsPermiteElFrontendConElHeaderAuthorization() throws Exception {
+		mockMvc.perform(options("/api/perfil")
+				.header(HttpHeaders.ORIGIN, "http://localhost:4200")
+				.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET")
+				.header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Authorization"))
+				.andExpect(status().isOk())
+				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:4200"));
 	}
 }

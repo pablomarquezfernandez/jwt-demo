@@ -37,6 +37,30 @@ Content-Type: application/json
 {"nombre": "Borrador", "precio": 900}
 
 
+### ===== REFRESH TOKEN =====
+
+### Canjear el refresh token por tokens nuevos (200)
+# @name refresh
+POST http://localhost:8080/auth/refresh
+Content-Type: application/json
+
+{"refreshToken": "{{login.response.body.refreshToken}}"}
+
+### Mi perfil con el token refrescado (200)
+GET http://localhost:8080/api/perfil
+Authorization: Bearer {{refresh.response.body.token}}
+
+### El refresh token no sirve como access token (401)
+GET http://localhost:8080/api/perfil
+Authorization: Bearer {{login.response.body.refreshToken}}
+
+### Un access token no sirve para refrescar (401)
+POST http://localhost:8080/auth/refresh
+Content-Type: application/json
+
+{"refreshToken": "{{login.response.body.token}}"}
+
+
 ### ===== CON TOKEN Y ROL ADMIN =====
 
 ### Listar usuarios con el token de ana (403)

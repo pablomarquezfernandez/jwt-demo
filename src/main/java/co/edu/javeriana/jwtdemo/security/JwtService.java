@@ -25,14 +25,19 @@ import io.jsonwebtoken.security.Keys;
 public class JwtService {
 
 	private static final String EMISOR = "jwt-demo";
+	private static final String CLAIM_TIPO = "tipo";
+	private static final String TIPO_REFRESH = "refresh";
 
 	private final SecretKey clave;
 	private final Duration expiracion;
+	private final Duration expiracionRefresh;
 
 	public JwtService(@Value("${jwt.secret}") String secreto,
-			@Value("${jwt.expiration-minutes}") long minutos) {
+			@Value("${jwt.expiration-minutes}") long minutos,
+			@Value("${jwt.refresh-expiration-days}") long diasRefresh) {
 		this.clave = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secreto));
 		this.expiracion = Duration.ofMinutes(minutos);
+		this.expiracionRefresh = Duration.ofDays(diasRefresh);
 	}
 
 	/**
@@ -56,6 +61,23 @@ public class JwtService {
 	}
 
 	/**
+	 * >>> AQUÍ SE GENERA EL REFRESH TOKEN <<< Misma clave y emisor, pero dura días, no lleva roles
+	 * y se marca con tipo=refresh: solo sirve para pedir un access token nuevo en /auth/refresh.
+	 */
+	public String generarRefreshToken(UserDetails usuario) {
+		Instant ahora = Instant.now();
+
+		return Jwts.builder()
+				.subject(usuario.getUsername())
+				.claim(CLAIM_TIPO, TIPO_REFRESH)
+				.issuer(EMISOR)
+				.issuedAt(Date.from(ahora))
+				.expiration(Date.from(ahora.plus(expiracionRefresh)))
+				.signWith(clave, Jwts.SIG.HS256)
+				.compact();
+	}
+
+	/**
 	 * Verifica la firma, la expiración y el emisor, y devuelve el payload.
 	 *
 	 * @throws JwtException si el token fue alterado, expiró o no es nuestro
@@ -67,6 +89,10 @@ public class JwtService {
 				.build()
 				.parseSignedClaims(token)
 				.getPayload();
+	}
+
+	public boolean esRefreshToken(Claims claims) {
+		return TIPO_REFRESH.equals(claims.get(CLAIM_TIPO, String.class));
 	}
 
 	public long getExpiracionEnSegundos() {
