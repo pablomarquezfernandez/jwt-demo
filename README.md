@@ -1,7 +1,7 @@
 # jwt-demo
 
 Ejemplo de autenticación con **JWT** en **Spring Boot 4.1** (Java 17, Spring Security, Spring Data JPA con H2 y [JJWT](https://github.com/jwtk/jjwt) 0.12.6).
-Acompaña la presentación «¿Qué es JWT?». El frontend Angular que lo consume (guards, interceptors y refresh token) está en [jwt-demo-front](../jwt-demo-front); lo que se agregó para eso se explica en [IMPLEMENTACION.md](IMPLEMENTACION.md).
+Acompaña la presentación «¿Qué es JWT?». El frontend Angular que lo consume (guards, interceptors y refresh token) está en [jwt-demo-front](https://github.com/pablomarquezfernandez/jwt-demo-front); lo que se agregó para eso se explica en [IMPLEMENTACION.md](IMPLEMENTACION.md).
 
 ## Cómo ejecutarlo
 
@@ -83,3 +83,5 @@ Petición → **filtro JWT** → controller → service → repository → entit
 
 - La clave de firma por defecto está en `application.properties` solo para que el ejemplo arranque. En un entorno real se pasa por la variable `JWT_SECRET` (genera una con `openssl rand -base64 32`).
 - El refresh token no se puede revocar: sirve hasta que vence (7 días). Ver [IMPLEMENTACION.md](IMPLEMENTACION.md#limitaciones-es-una-demo).
+
+Código: https://github.com/pablomarquezfernandez/jwt-demo · Historial de commits: https://github.com/pablomarquezfernandez/jwt-demo/commits/main · Detalle de los commits en [IMPLEMENTACION.md](IMPLEMENTACION.md#repositorio-y-commits).

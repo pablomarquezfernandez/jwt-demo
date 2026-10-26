@@ -1,6 +1,8 @@
 # Implementación: refresh token y soporte para el frontend
 
-Este documento explica qué se agregó al backend `jwt-demo` para que el frontend Angular ([jwt-demo-front](../jwt-demo-front)) pueda usar **guards**, **interceptors** y **refresh token**. La explicación del lado del frontend está en [jwt-demo-front/IMPLEMENTACION.md](../jwt-demo-front/IMPLEMENTACION.md).
+> Repositorio: https://github.com/pablomarquezfernandez/jwt-demo · Frontend: https://github.com/pablomarquezfernandez/jwt-demo-front · [Commits](#repositorio-y-commits)
+
+Este documento explica qué se agregó al backend `jwt-demo` para que el frontend Angular ([jwt-demo-front](https://github.com/pablomarquezfernandez/jwt-demo-front)) pueda usar **guards**, **interceptors** y **refresh token**. La explicación del lado del frontend está en [jwt-demo-front/IMPLEMENTACION.md](https://github.com/pablomarquezfernandez/jwt-demo-front/blob/main/IMPLEMENTACION.md).
 
 ## El problema
 
@@ -37,11 +39,11 @@ Cómo leer las respuestas desde el cliente:
 | **403** | No | El token es válido pero el rol no alcanza; un token nuevo trae el mismo rol (se recarga de la base de datos en `AuthService.refrescar`). |
 | **401** de `/auth/refresh` | No | El refresh token venció, fue alterado o no es un refresh token: la sesión terminó y hay que hacer login. |
 
-La explicación completa, con los tres momentos posibles (al recibir un 401, al navegar y antes de que venza), está en [jwt-demo-front/IMPLEMENTACION.md](../jwt-demo-front/IMPLEMENTACION.md#en-qué-momento-se-usa-el-refresh-token).
+La explicación completa, con los tres momentos posibles (al recibir un 401, al navegar y antes de que venza), está en [jwt-demo-front/IMPLEMENTACION.md](https://github.com/pablomarquezfernandez/jwt-demo-front/blob/main/IMPLEMENTACION.md#en-qué-momento-se-usa-el-refresh-token).
 
 ## Los tres flujos vistos desde el backend
 
-El frontend tiene tres flujos (detallados en [jwt-demo-front/IMPLEMENTACION.md](../jwt-demo-front/IMPLEMENTACION.md#los-tres-flujos)). Esto es lo que ve este backend en cada uno:
+El frontend tiene tres flujos (detallados en [jwt-demo-front/IMPLEMENTACION.md](https://github.com/pablomarquezfernandez/jwt-demo-front/blob/main/IMPLEMENTACION.md#los-tres-flujos)). Esto es lo que ve este backend en cada uno:
 
 | Flujo | Qué llega | Quién responde | Respuesta |
 |---|---|---|---|
@@ -70,7 +72,7 @@ sequenceDiagram
 
 ## Teoría
 
-Las preguntas que motivan esta implementación (sesión sin estado, quién pone el token, quién protege las rutas, si el cliente es confiable, cuánto debe durar un token, por qué dos tokens y cuándo refrescar) están explicadas en la sección [Teoría de jwt-demo-front/IMPLEMENTACION.md](../jwt-demo-front/IMPLEMENTACION.md#teoría-por-qué-existen-estas-piezas). La idea central para el backend: **el cliente no es confiable**, así que la firma, la expiración y los roles se validan aquí en cada petición, y el refresh token tiene su propio tipo (`tipo=refresh`) para que no sirva como access token.
+Las preguntas que motivan esta implementación (sesión sin estado, quién pone el token, quién protege las rutas, si el cliente es confiable, cuánto debe durar un token, por qué dos tokens y cuándo refrescar) están explicadas en la sección [Teoría de jwt-demo-front/IMPLEMENTACION.md](https://github.com/pablomarquezfernandez/jwt-demo-front/blob/main/IMPLEMENTACION.md#teoría-por-qué-existen-estas-piezas). La idea central para el backend: **el cliente no es confiable**, así que la firma, la expiración y los roles se validan aquí en cada petición, y el refresh token tiene su propio tipo (`tipo=refresh`) para que no sirva como access token.
 
 ## Cambios, archivo por archivo
 
@@ -125,3 +127,28 @@ Con eso el access token vence en un minuto y en el frontend se ve el `401 → PO
 
 - **No hay revocación.** Un refresh token robado sirve hasta que vence (7 días), y hacer logout en el frontend no lo invalida en el servidor. En producción se guarda en la base de datos (o su identificador `jti`) para poder revocarlo, y se rota: cada refresh invalida el anterior.
 - El frontend guarda los tokens en `localStorage`, que es simple pero queda expuesto a XSS. Una alternativa más segura es enviar el refresh token en una cookie `HttpOnly; Secure; SameSite`.
+
+## Repositorio y commits
+
+| | URL |
+|---|---|
+| Repositorio | https://github.com/pablomarquezfernandez/jwt-demo |
+| Push a `main` (rama publicada) | https://github.com/pablomarquezfernandez/jwt-demo/tree/main |
+| Historial de commits | https://github.com/pablomarquezfernandez/jwt-demo/commits/main |
+| Repositorio del frontend | https://github.com/pablomarquezfernandez/jwt-demo-front |
+| Presentación (privada: se abre cuando el autor la comparte) | https://claude.ai/artifact/BwbLQ3YH8DAm1LjAjAp98Y |
+
+Clonar:
+
+```bash
+git clone https://github.com/pablomarquezfernandez/jwt-demo.git
+```
+
+Commits, en orden:
+
+| # | Commit | Mensaje | Qué contiene |
+|---|---|---|---|
+| 1 | [`f4ebc8d`](https://github.com/pablomarquezfernandez/jwt-demo/commit/f4ebc8d59e2aabd9ccb8e03cac33c1a760ac7801) | Ejemplo base de autenticación con JWT en Spring Boot | Login, registro, endpoints públicos, con token y con rol ADMIN; `JwtService`, `JwtAuthenticationFilter` y 10 pruebas. |
+| 2 | [`7dda6f1`](https://github.com/pablomarquezfernandez/jwt-demo/commit/7dda6f134bb15935bbda0e6fcaa527fd5bfea717) | Agregar refresh token y CORS para el frontend Angular | `/auth/refresh`, refresh token con `tipo=refresh`, filtro que lo rechaza como access token, `TokenInvalidoException`, CORS, 6 pruebas nuevas. |
+| 3 | [`752c840`](https://github.com/pablomarquezfernandez/jwt-demo/commit/752c840eebc21df749659ab0709e1709e947155d) | Documentar refresh token, flujos y teoría | Primera versión de este `IMPLEMENTACION.md` y README actualizado. |
+| 4 | ver [historial](https://github.com/pablomarquezfernandez/jwt-demo/commits/main) | Agregar URL de repositorios y commits a la documentación | Esta sección y los enlaces entre repositorios. (Un commit no puede contener su propio identificador, por eso este aparece solo en el historial.) |
